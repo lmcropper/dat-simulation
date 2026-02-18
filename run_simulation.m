@@ -1,37 +1,31 @@
 % Function to run a single simulation
-function intensity = run_simulation(mask_radius_min, mask_radius_max, verbose)
+function intensity = run_simulation(params, mask_radius_min, mask_radius_max, verbose)
     % Optional verbose parameter for progress reporting
-    if nargin < 3
+    if nargin < 4
         verbose = false;
     end
-    % Parameters
-    lambda = 532e-9; % Wavelength in meters
-    a = 12e-3; % Aperture radius in meters
-    w0 = 1.1e-3; % Beam waist in meters
-    f = 25.4e-3; % Focal length in meters
-    P = 1; % Beam power in arbitrary units
-    k = 2*pi/lambda; % Wave number
-    n = 1.5;
-
-    p = -1; % Position Factor equal to 1-(2f/Si). For a collimated input beam, equal to 1.
-    q = -1; % Shape factor. Equal to 1 for a plano-convex lens with the plane side facing the source.
-
-    % Define the grid
-    % Physical plot range in real units
-    z_min = -3000e-6; % Axial distance in meters (micrometers shown as -2000)
-    z_max = 1000e-6;   % Axial distance in meters
-    r_min = -30e-6;  % Radial distance in meters
-    r_max = 30e-6;   % Radial distance in meters
-
-    % Conversion factors from normalized (u,v) to real units (z,r)
-    % u is scaled axial distance, v is scaled radial distance
-    % Typical Fresnel scaling: u ~ z*k*a^2/(2*f), v ~ k*a*r/f
+    
+    % Extract parameters from struct
+    lambda = params.lambda;
+    a = params.a;
+    w0 = params.w0;
+    f = params.f;
+    k = params.k;
+    n = params.n;
+    p = params.p;
+    q = params.q;
+    z_min = params.z_min;
+    z_max = params.z_max;
+    r_min = params.r_min;
+    r_max = params.r_max;
+    grid_points_z = params.grid_points_z;
+    grid_points_r = params.grid_points_r;
+    
+    % Conversion factors
     z_scale = f^2 / (k*a^2);
-    r_scale = f / (k*a);       % Conversion factor: r = v * r_scale
-
-    % Create normalized coordinate grids from real unit ranges
-    grid_points_z = 400;
-    grid_points_r = 400;
+    r_scale = f / (k*a);
+    
+    % Create normalized coordinate grids
     u_values = linspace(z_min/z_scale, z_max/z_scale, grid_points_z);
     v_values = linspace(r_min/r_scale, r_max/r_scale, grid_points_r);
     [u, v] = meshgrid(u_values, v_values);

@@ -1,3 +1,6 @@
+Outputs/
+
+First_Center_Spot_Sweep/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

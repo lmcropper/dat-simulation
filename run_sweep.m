@@ -6,32 +6,53 @@ close all;
 
 % ========== SWEEP PARAMETERS ==========
 % Define which parameter to sweep and the range
-sweep_param = 'mask_radius_min';  % Parameter to sweep: 'mask_radius_min' or 'mask_radius_max'
-sweep_start = 0.0;     % Start value (0%)
-sweep_end = 0.1;       % End value (70%)
-sweep_increment = 0.01; % Increment (1%)
+sweep_param = 'mask_radius_max';  % Options: 'mask_radius_min', 'mask_radius_max', 'annulus_fixed_width'
+sweep_start = 0.0e-3 / 15e-3;     % Start value (0%)
+sweep_end = 15e-3 / 15e-3;       % End value (70%)
+sweep_increment = 0.1e-3 / 15e-3; % Increment (1%)
 
 % Fixed parameters
 fixed_mask_radius_min = 0.0;   % Inner radius (when not sweeping)
-fixed_mask_radius_max = 1.0;   % Outer radius (when not sweeping)
+fixed_mask_radius_max = 2.55e-3 / 15e-3;   % Outer radius (when not sweeping)
+annulus_width = 1e-3 / 15e-3;           % Fixed annulus width (for 'annulus_fixed_width' mode)
 
 % ========== SIMULATION PARAMETERS ==========
-lambda = 532e-9;
-a = 12e-3;
-w0 = 1.1e-3;
-f = 25.4e-3;
-k = 2*pi/lambda;
+% Create parameter struct using helper function
+params = create_simulation_params();
+
+% Override specific parameters if needed
+params.z_min = -5000e-6;
+params.z_max = 1000e-6;
+params.r_max = 200e-6;
+params.r_min = -200e-6;
+params.grid_points_z = 1000;
+params.grid_points_r = 1000;
+params.Nrho = 2048;     % Keep this high, reducing it causes spatial aliasing in the simulation
+params.lambda = 532e-9;  % Wavelength (m)
+params.a = 15e-3;        % Aperture radius (m)
+params.w0 = 0.25e-3;      % Beam waist (m)
+params.f = 15e-3;      % Focal length (m)
+params.p = -1;        % Refractive index of medium
+params.q = -1;        % Refractive index of lens
+
+% Extract for convenience
+lambda = params.lambda;
+a = params.a;
+w0 = params.w0;
+f = params.f;
+k = params.k;
+z_min = params.z_min;
+z_max = params.z_max;
+r_min = params.r_min;
+r_max = params.r_max;
+grid_points_z = params.grid_points_z;
+grid_points_r = params.grid_points_r;
 
 z_scale = f^2 / (k*a^2);
 r_scale = f / (k*a);
 
-z_min = -6000e-6;
-z_max = -2000e-6;
-r_min = -30e-6;
-r_max = 30e-6;
-
-u_values = linspace(z_min/z_scale, z_max/z_scale, 1000);
-v_values = linspace(r_min/r_scale, r_max/r_scale, 400);
+u_values = linspace(z_min/z_scale, z_max/z_scale, grid_points_z);
+v_values = linspace(r_min/r_scale, r_max/r_scale, grid_points_r);
 
 % ========== CREATE SWEEP ARRAY ==========
 sweep_values = sweep_start : sweep_increment : sweep_end;
@@ -44,9 +65,8 @@ fprintf('  Increment: %.3f\n', sweep_increment);
 fprintf('  Total simulations: %d\n\n', num_sweep_points);
 
 % ========== PRE-ALLOCATE RESULTS MATRIX ==========
-% 3D matrix: (num_v, num_u, num_sweep_points)
-% Note: run_simulation creates 400x400 grids internally
-intensity_sweep = zeros(400, 400, num_sweep_points);
+% 3D matrix: (num_r, num_z, num_sweep_points)
+intensity_sweep = zeros(grid_points_r, grid_points_z, num_sweep_points);
 sweep_param_values = zeros(1, num_sweep_points);
 
 % ========== RUN SIMULATIONS ==========
@@ -60,18 +80,26 @@ for sweep_idx = 1:num_sweep_points
     elseif strcmp(sweep_param, 'mask_radius_max')
         mask_radius_min = fixed_mask_radius_min;
         mask_radius_max = sweep_value;
+    elseif strcmp(sweep_param, 'annulus_fixed_width')
+        % Sweep outer radius with fixed annulus width
+        mask_radius_max = sweep_value;
+        mask_radius_min = max(0.0, sweep_value - annulus_width);  % Ensure non-negative
     else
         error('Unknown sweep parameter: %s', sweep_param);
     end
     
     % Log progress
-    fprintf('Running simulation %d/%d: %s = %.3f\n', sweep_idx, num_sweep_points, sweep_param, sweep_value);
+    fprintf('Running simulation %d/%d: %s = %.3f', sweep_idx, num_sweep_points, sweep_param, sweep_value);
+    if strcmp(sweep_param, 'annulus_fixed_width')
+        fprintf(' (inner = %.3f, width = %.3f)', mask_radius_min, mask_radius_max - mask_radius_min);
+    end
+    fprintf('\n');
     
     % Run simulation with verbose output
-    intensity_flat = run_simulation(mask_radius_min, mask_radius_max, true);
+    intensity_flat = run_simulation_gpu_ultra(params, mask_radius_min, mask_radius_max, false);
     
-    % Reshape to 2D grid (400x400 as created by run_simulation)
-    intensity_2d = reshape(intensity_flat, 400, 400);
+    % Reshape to 2D grid (grid_points_r x grid_points_z as created by simulation)
+    intensity_2d = reshape(intensity_flat, grid_points_r, grid_points_z);
     
     % Store in 3D matrix
     intensity_sweep(:, :, sweep_idx) = intensity_2d;
@@ -83,13 +111,15 @@ fprintf('\nAll simulations complete!\n');
 % ========== SAVE RESULTS ==========
 % Create filename with timestamp
 timestamp = datetime('now', 'Format', 'yyyyMMdd_HHmmss');
-filename = sprintf('sweep_results_%s_%s.mat', sweep_param, char(timestamp));
+filename = sprintf('Outputs/sweep_results_%s_%s.mat', sweep_param, char(timestamp));
 
+% Save with -v7.3 flag for HDF5 format (enables partial loading in sweep_viewer_fast)
+fprintf('Saving results (HDF5 format for fast loading)...\n');
 save(filename, 'intensity_sweep', 'sweep_param_values', 'sweep_param', ...
     'u_values', 'v_values', 'z_scale', 'r_scale', ...
     'lambda', 'a', 'w0', 'f', 'k', ...
     'z_min', 'z_max', 'r_min', 'r_max', ...
-    'sweep_start', 'sweep_end', 'sweep_increment');
+    'sweep_start', 'sweep_end', 'sweep_increment', 'annulus_width', '-v7.3');
 
 fprintf('Results saved to: %s\n', filename);
 fprintf('Matrix size: %d x %d x %d\n', size(intensity_sweep, 1), size(intensity_sweep, 2), size(intensity_sweep, 3));
