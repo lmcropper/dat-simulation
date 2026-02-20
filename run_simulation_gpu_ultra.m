@@ -50,11 +50,11 @@ function intensity = run_simulation_gpu_ultra(params, mask_radius_min, mask_radi
     
     %PHI FOR SPHERICAL ABERRATION
     phi_const = single(-((a^4) / (32*n*f^3*(n-1))) * ...
-                (((n+2)/(n-1))*q^2 + (4*(n+1)*p*q) + ((3*n+2)*(n-1)*p^2) + ((n^3)/(n-1))));
+               (((n+2)/(n-1))*q^2 + (4*(n+1)*p*q) + ((3*n+2)*(n-1)*p^2) + ((n^3)/(n-1))));
     phi_vals = phi_const * (rho_gpu.^4);
 
     %PHI FOR NO ABERRATION
-    % phi_vals = gpuArray(single(zeros(size(rho_gpu))));  % No aberration
+    %phi_vals = gpuArray(single(zeros(size(rho_gpu))));  % No aberration
     
     % gauss_vals = exp(-rho_gpu.^2 / (w0/a)^2);
     gauss_vals = 1;

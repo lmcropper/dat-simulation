@@ -4,36 +4,36 @@
 clear all;
 close all;
 
-% ========== SWEEP PARAMETERS ==========
-% Define which parameter to sweep and the range
-sweep_param = 'mask_radius_max';  % Options: 'mask_radius_min', 'mask_radius_max', 'annulus_fixed_width'
-sweep_start = 0.0e-3 / 15e-3;     % Start value (0%)
-sweep_end = 15e-3 / 15e-3;       % End value (70%)
-sweep_increment = 0.1e-3 / 15e-3; % Increment (1%)
-
-% Fixed parameters
-fixed_mask_radius_min = 0.0;   % Inner radius (when not sweeping)
-fixed_mask_radius_max = 2.55e-3 / 15e-3;   % Outer radius (when not sweeping)
-annulus_width = 1e-3 / 15e-3;           % Fixed annulus width (for 'annulus_fixed_width' mode)
-
 % ========== SIMULATION PARAMETERS ==========
 % Create parameter struct using helper function
 params = create_simulation_params();
 
 % Override specific parameters if needed
-params.z_min = -5000e-6;
-params.z_max = 1000e-6;
-params.r_max = 200e-6;
-params.r_min = -200e-6;
-params.grid_points_z = 1000;
-params.grid_points_r = 1000;
+params.z_min = -50e-6;
+params.z_max = 200e-6;
+params.r_max = 50e-6;
+params.r_min = -50e-6;
+params.grid_points_z = 1100;
+params.grid_points_r = 800;
 params.Nrho = 2048;     % Keep this high, reducing it causes spatial aliasing in the simulation
-params.lambda = 532e-9;  % Wavelength (m)
+params.lambda = 405e-9;  % Wavelength (m)
 params.a = 15e-3;        % Aperture radius (m)
-params.w0 = 0.25e-3;      % Beam waist (m)
-params.f = 15e-3;      % Focal length (m)
-params.p = -1;        % Refractive index of medium
-params.q = -1;        % Refractive index of lens
+params.w0 = 1.1e-3;      % Beam waist (m)
+params.f = 40e-3;      % Focal length (m)
+params.p = -1;        % Position factor of system
+params.q = -1;        % Shape factor of lens
+
+% ========== SWEEP PARAMETERS ==========
+% Define which parameter to sweep and the range
+sweep_param = 'mask_radius_min';  % Options: 'mask_radius_min', 'mask_radius_max', 'annulus_fixed_width'
+sweep_start = 0e-3 / params.a;     % Start value (0%)
+sweep_end = params.a / params.a;       % End value (70%)
+sweep_increment = 0.1e-3 / params.a; % Increment (1%)
+
+% Fixed parameters
+fixed_mask_radius_min = 0.0;   % Inner radius (when not sweeping)
+fixed_mask_radius_max = 11e-3 / params.a;   % Outer radius (when not sweeping)
+annulus_width = 1e-3 / params.a;           % Fixed annulus width (for 'annulus_fixed_width' mode)
 
 % Extract for convenience
 lambda = params.lambda;
