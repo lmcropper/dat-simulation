@@ -33,13 +33,16 @@ function intensity = run_simulation_fast(params, mask_radius_min, mask_radius_ma
     % Mask array based on inner and outer radius
     mask_vals = double((rho >= mask_radius_min) & (rho <= mask_radius_max));
 
-    % Phase term for spherical aberration based on shape and position factor p and q
-    % If you want to simulate an ideal lens, set this whole term to zeros() instead
+    % ========== SELECT ABERRATION TYPE (Uncomment either Spherical or No Aberration) ==========
     phi_vals = -((a*rho).^4 / (32*n*f^3*(n-1))) * ...
                (((n+2)/(n-1))*q^2 + (4*(n+1)*p*q) + ((3*n+2)*(n-1)*p^2) + ((n^3)/(n-1)));
 
-    % Gaussian illumination pattern. If you'd rather illuminate with a plane wave, set this to 1.
-    gauss_vals = exp(-rho.^2 / (w0/a)^2);
+    % phi_vals = zeros(size(rho));  % No aberration
+
+    % ========== SELECT INPUT BEAM PROFILE (Uncomment either Gaussian or Plane Wave) ==========
+    gauss_vals = exp(-rho.^2 / (w0/a)^2); % Gaussian beam profile
+    
+    % gauss_vals = 1; % Plane wave profile
 
     %Combine initial amplitude factors into a single starting phase plane.
     base_vals = mask_vals .* gauss_vals .* rho;

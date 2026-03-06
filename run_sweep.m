@@ -1,7 +1,7 @@
 % Sweep Script: Run multiple simulations with varying parameters
 % This script automates parameter sweeps and saves results as a 3D matrix
 
-clear all;
+clear;
 close all;
 
 % ========== SIMULATION PARAMETERS ==========
@@ -9,30 +9,30 @@ close all;
 params = create_simulation_params();
 
 % Override specific parameters if needed
-params.z_min = -50e-6;
-params.z_max = 200e-6;
-params.r_max = 50e-6;
-params.r_min = -50e-6;
-params.grid_points_z = 1100;
-params.grid_points_r = 800;
+params.z_min = -4000e-6;
+params.z_max = 500e-6;
+params.r_max = 20e-6;
+params.r_min =-20e-6;
+params.grid_points_z = 2000;
+params.grid_points_r = 1000;
 params.Nrho = 2048;     % Keep this high, reducing it causes spatial aliasing in the simulation
-params.lambda = 405e-9;  % Wavelength (m)
+params.lambda = 650e-9;  % Wavelength (m)
 params.a = 15e-3;        % Aperture radius (m)
-params.w0 = 1.1e-3;      % Beam waist (m)
+params.w0 = 0.5e-3;      % Beam waist (m)
 params.f = 40e-3;      % Focal length (m)
 params.p = -1;        % Position factor of system
-params.q = -1;        % Shape factor of lens
+params.q = 0;        % Shape factor of lens
 
 % ========== SWEEP PARAMETERS ==========
 % Define which parameter to sweep and the range
 sweep_param = 'mask_radius_min';  % Options: 'mask_radius_min', 'mask_radius_max', 'annulus_fixed_width'
 sweep_start = 0e-3 / params.a;     % Start value (0%)
-sweep_end = params.a / params.a;       % End value (70%)
-sweep_increment = 0.1e-3 / params.a; % Increment (1%)
+sweep_end = 0e-3 / params.a;       % End value (70%)
+sweep_increment = 0.3e-3 / params.a; % Increment (1%)
 
 % Fixed parameters
 fixed_mask_radius_min = 0.0;   % Inner radius (when not sweeping)
-fixed_mask_radius_max = 11e-3 / params.a;   % Outer radius (when not sweeping)
+fixed_mask_radius_max = params.a / params.a;   % Outer radius (when not sweeping)
 annulus_width = 1e-3 / params.a;           % Fixed annulus width (for 'annulus_fixed_width' mode)
 
 % Extract for convenience
