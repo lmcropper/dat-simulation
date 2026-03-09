@@ -1,4 +1,4 @@
-# Debye Integral Focal Intensity Patterm Simulator
+# Debye Integral Focal Region Intensity Patterm Simulator
 By Logan Cropper
 
 
